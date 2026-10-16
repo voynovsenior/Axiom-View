@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Axiom Exchange View</title>
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #0d1117;
+      color: #c9d1d9;
+      font-family: -apple-system, Inter, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+      overflow-x: hidden;
+      padding-bottom: 76px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ====== РЕКЛАМНЫЙ БАННЕР ====== */
+    .ad-banner {
+      background: linear-gradient(90deg, #1f6feb, #7c4dff, #1f6feb, #7c4dff);
+      background-size: 300% 100%;
+      animation: shimmer 6s linear infinite;
+      padding: 10px 16px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      position: relative;
+      z-index: 10;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    .ad-banner .brand {
+      color: #ffd54f;
+    }
+
+    /* ====== ТОПБАР ====== */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
+      position: sticky;
+      top: 0;
+      z-index: 9;
+    }
+
+    .topbar-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .topbar-title .white {
+      color: #f0f6fc;
+    }
+
+    .topbar-title .blue {
+      color: #58a6ff;
+    }
+
+    .status-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      color: #8b949e;
+      white-space: nowrap;
+      transition: color 0.3s;
+    }
+
+    .status-pill.live {
+      color: #3fb950;
+      border-color: #238636;
+    }
+
+    .status-pill.error {
+      color: #f85149;
+      border-color: #f85149;
+    }
+
+    /* ====== КОНТЕНТ ====== */
+    .page {
+      padding: 12px 16px 24px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .tab-page {
+      display: none;
+    }
+
+    .tab-page.active {
+      display: block;
+    }
+
+    /* ====== БАННЕР AXIOM ====== */
+    .axiom-banner {
+      background: linear-gradient(135deg, #1f6feb, #7c4dff);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .axiom-banner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 50%;
+    }
+
+    .axiom-banner .icon {
+      font-size: 32px;
+      margin-bottom: 8px;
+    }
+
+    .axiom-banner .title {
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .axiom-banner .sub {
+      font-size: 13px;
+      color: rgba(255,255,255,0.75);
+    }
+
+    /* ====== СПИСОК ИНСТРУМЕНТОВ ====== */
+    .instrument-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .instrument-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      background: #161b22;
+      border-radius: 10px;
+      border: 1px solid #21262d;
+      cursor: pointer;
+      transition: background 0.15s;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .instrument-row:active {
+      background: #1c2128;
+    }
+
+    .instrument-row .left {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .instrument-row .name {
+      font-weight: 600;
+      color: #f0f6fc;
+      font-size: 15px;
+    }
+
+    .instrument-row .sub {
+      font-size: 12px;
+      color: #8b949e;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .instrument-row .right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .instrument-row .price {
+      font-family: 'SF Mono', 'Roboto Mono', 'Courier New', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #8b949e;
+      transition: color 0.3s;
+    }
+
+    .instrument-row .price.up {
+      color: #3fb950;
+    }
+
+    .instrument-row .price.down {
+      color: #f85149;
+    }
+
+    .star-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      line-height: 1;
+      color: #30363d;
+      transition: color 0.2s, transform 0.2s;
+      flex-shrink: 0;
+    }
+
+    .star-btn.active {
+      color: #ffca28;
+    }
+
+    .star-btn:active {
+      transform: scale(1.3);
+    }
+
+    /* ====== НИЖНИЕ ТАБЫ ====== */
+    .bottom-tabs {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      background: #161b22;
+      border-top: 1px solid #21262d;
+      padding: 6px 0 env(safe-area-inset-bottom, 6px) 0;
+      z-index: 100;
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 6px 0;
+      background: none;
+      border: none;
+      color: #8b949e;
+      cursor: pointer;
+      transition: color 0.2s;
+      font-family: inherit;
+    }
+
+    .tab-item.active {
+      color: #58a6ff;
+    }
+
+    .tab-item .icon {
+      font-size: 1.25rem;
+      line-height: 1;
+    }
+
+    .tab-item .label {
+      font-size: 10px;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    /* ====== ПОЛНОЭКРАННЫЙ ГРАФИК ====== */
+    .chart-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0d1117;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+    }
+
+    .chart-overlay.open {
+      display: flex;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: #0d1117;
+      border-bottom: 1px solid #21262d;
+      flex-shrink: 0;
+      z-index: 5;
+    }
+
+    .chart-header .back-btn {
+      background: none;
+      border: none;
+      color: #c9d1d9;
+      font-size: 22px;
+      cursor: pointer;
+      padding: 4px 8px;
+      line-height: 1;
+      border-radius: 8px;
+      transition: background 0.15s;
+    }
+
+    .chart-header .back-btn:active {
+      background: #21262d;
+    }
+
+    .chart-header .info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .chart-header .info .title {
+      font-weight: 700;
+      font-size: 16px;
+      color: #f0f6fc;
+    }
+
+    .chart-header .info .sub {
+      font-size: 12px;
+      color: #8b949e;
+    }
+
+    .chart-header .header-price {
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #8b949e;
+      text-align: right;
+      transition: color 0.3s;
+    }
+
+    .chart-header .header-price.up { color: #3fb950; }
+    .chart-header .header-price.down { color: #f85149; }
+
+    .chart-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #chartCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+
+    #drawingCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      cursor: crosshair;
+    }
+
+    #drawingCanvas.active {
+      pointer-events: auto;
+    }
+
+    .chart-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #8b949e;
+      font-size: 14px;
+      z-index: 3;
+      background: #0d1117;
+      transition: opacity 0.3s;
+    }
+
+    .chart-loading.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .chart-watermark {
+      position: absolute;
+      bottom: 12px;
+      left: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: #21262d;
+      z-index: 2;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .fab-draw {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(135deg, #1f6feb, #7c4dff);
+      color: #fff;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 4px 16px rgba(31, 111, 235, 0.45);
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .fab-draw:active {
+      transform: scale(0.92);
+    }
+
+    .fab-draw.open {
+      background: #da3633;
+      box-shadow: 0 4px 16px rgba(218, 54, 51, 0.45);
+    }
+
+    /* ====== ПАНЕЛЬ ИНСТРУМЕНТОВ ====== */
+    .tools-panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(22, 27, 34, 0.98);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid #30363d;
+      border-radius: 16px 16px 0 0;
+      padding: 16px;
+      z-index: 20;
+      transform: translateY(100%);
+      transition: transform 0.25s ease;
+      max-height: 55vh;
+      overflow-y: auto;
+      pointer-events: none;
+    }
+
+    .tools-panel.open {
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .tools-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .tools-header .title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f0f6fc;
+    }
+
+    .tools-header .close-btn {
+      background: #21262d;
+      border: none;
+      color: #8b949e;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .tools-header .close-btn:active {
+      background: #30363d;
+    }
+
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 12px 4px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      color: #c9d1d9;
+      cursor: pointer;
+      font-size: 10px;
+      font-family: inherit;
+      transition: background 0.15s, border-color 0.15s;
+      line-height: 1.2;
+      text-align: center;
+    }
+
+    .tool-btn:active {
+      background: #30363d;
+    }
+
+    .tool-btn.active {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    .tool-btn .sym {
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    /* ====== ПРОФИЛЬ ====== */
+    .profile-page {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 0;
+    }
+
+    .profile-avatar {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1f6feb, #7c4dff);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .profile-field {
+      width: 100%;
+      margin-bottom: 14px;
+    }
+
+    .profile-field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .profile-field input {
+      width: 100%;
+      padding: 12px 14px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      color: #f0f6fc;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .profile-field input:focus {
+      border-color: #58a6ff;
+    }
+
+    .save-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1f6feb, #7c4dff);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.15s;
+      margin-top: 8px;
+    }
+
+    .save-btn:active {
+      transform: scale(0.97);
+    }
+
+    .save-btn.saved {
+      background: #238636;
+    }
+
+    .profile-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 28px;
+      width: 100%;
+    }
+
+    .stat-item {
+      flex: 1;
+      text-align: center;
+      padding: 16px;
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 12px;
+    }
+
+    .stat-item .num {
+      font-size: 22px;
+      font-weight: 700;
+      color: #f0f6fc;
+      font-family: 'SF Mono', 'Roboto Mono', monospace;
+    }
+
+    .stat-item .lbl {
+      font-size: 11px;
+      color: #8b949e;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      margin-top: 4px;
+    }
+
+    /* ====== ИЗБРАННОЕ ====== */
+    .empty-fav {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 20px;
+      text-align: center;
+    }
+
+    .empty-fav .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+    }
+
+    .empty-fav .text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #8b949e;
+      margin-bottom: 6px;
+    }
+
+    .empty-fav .hint {
+      font-size: 13px;
+      color: #484f58;
+    }
+
+    /* ====== СКРОЛЛБАР ====== */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- РЕКЛАМНЫЙ БАННЕР -->
+  <div class="ad-banner">
+    🚀 Биржа <span class="brand">Axiom Exchange</span> очень скоро — следите за запуском!
+  </div>
+
+  <!-- ТОПБАР -->
+  <div class="topbar">
+    <div class="topbar-title">
+      <span class="white">Axiom</span> <span class="blue">Exchange View</span>
+    </div>
+    <div class="status-pill" id="statusPill">Загрузка...</div>
+  </div>
+
+  <!-- СТРАНИЦЫ -->
+  <div class="page" id="pageCrypto">
+    <div class="axiom-banner" id="axiomBanner">
+      <div class="icon">⚡</div>
+      <div class="title">Axiom Exchange</div>
+      <div class="sub">Скоро запуск — лучшие условия для трейдинга</div>
+    </div>
+    <div class="instrument-list" id="listCrypto"></div>
+  </div>
+
+  <div class="page" id="pageStocks">
+    <div class="instrument-list" id="listStocks"></div>
+  </div>
+
+  <div class="page" id="pageCurrencies">
+    <div class="instrument-list" id="listCurrencies"></div>
+  </div>
+
+  <div class="page" id="pageFavorites">
+    <div id="favContainer"></div>
+  </div>
+
+  <div class="page" id="pageProfile">
+    <div class="profile-page">
+      <div class="profile-avatar" id="avatarLetter">A</div>
+      <div class="profile-field">
+        <label>Имя</label>
+        <input type="text" id="inputFirstName" placeholder="Введите имя">
+      </div>
+      <div class="profile-field">
+        <label>Фамилия</label>
+        <input type="text" id="inputLastName" placeholder="Введите фамилию">
+      </div>
+      <button class="save-btn" id="saveBtn">Сохранить</button>
+      <div class="profile-stats">
+        <div class="stat-item">
+          <div class="num" id="statFavs">0</div>
+          <div class="lbl">В избранном</div>
+        </div>
+        <div class="stat-item">
+          <div class="num" id="statTotal">0</div>
+          <div class="lbl">Инструментов</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- НИЖНИЕ ТАБЫ -->
+  <div class="bottom-tabs">
+    <button class="tab-item active" data-tab="crypto">
+      <span class="icon">🪙</span>
+      <span class="label">Крипта</span>
+    </button>
+    <button class="tab-item" data-tab="stocks">
+      <span class="icon">📊</span>
+      <span class="label">Акции</span>
+    </button>
+    <button class="tab-item" data-tab="currencies">
+      <span class="icon">💱</span>
+      <span class="label">Валюты</span>
+    </button>
+    <button class="tab-item" data-tab="favorites">
+      <span class="icon">⭐</span>
+      <span class="label">Избранное</span>
+    </button>
+    <button class="tab-item" data-tab="profile">
+      <span class="icon">👤</span>
+      <span class="label">Профиль</span>
+    </button>
+  </div>
+
+  <!-- ПОЛНОЭКРАННЫЙ ГРАФИК -->
+  <div class="chart-overlay" id="chartOverlay">
+    <div class="chart-header">
+      <button class="back-btn" id="chartBack">←</button>
+      <div class="info">
+        <div class="title" id="chartTitle">—</div>
+        <div class="sub" id="chartSub">—</div>
+      </div>
+      <div class="header-price" id="chartPrice">—</div>
+      <button class="star-btn" id="chartStar" style="font-size:22px;">★</button>
+    </div>
+    <div class="chart-container" id="chartContainer">
+      <div id="chartCanvas"></div>
+      <canvas id="drawingCanvas"></canvas>
+      <div class="chart-loading" id="chartLoading">Загрузка графика...</div>
+      <div class="chart-watermark">AXIOM EXCHANGE</div>
+      <button class="fab-draw" id="fabDraw">✏️</button>
+      <div class="tools-panel" id="toolsPanel">
+        <div class="tools-header">
+          <div class="title">Инструменты</div>
+          <button class="close-btn" id="toolsClose">✕</button>
+        </div>
+        <div class="tools-grid" id="toolsGrid"></div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ======================= КОНСТАНТЫ =======================
+  const CRYPTO_LIST = [
+    { id: 'BTCUSDT', name: 'BTC/USDT', sub: 'Bitcoin · Bybit', color: '#f7931a' },
+    { id: 'ETHUSDT', name: 'ETH/USDT', sub: 'Ethereum · Bybit', color: '#f7931a' },
+    { id: 'SOLUSDT', name: 'SOL/USDT', sub: 'Solana · Bybit', color: '#f7931a' },
+    { id: 'BNBUSDT', name: 'BNB/USDT', sub: 'BNB · Bybit', color: '#f7931a' },
+    { id: 'XRPUSDT', name: 'XRP/USDT', sub: 'Ripple · Bybit', color: '#f7931a' },
+    { id: 'TONUSDT', name: 'TON/USDT', sub: 'Toncoin · Bybit', color: '#f7931a' },
+    { id: 'DOGEUSDT', name: 'DOGE/USDT', sub: 'Dogecoin · Bybit', color: '#f7931a' },
+    { id: 'ADAUSDT', name: 'ADA/USDT', sub: 'Cardano · Bybit', color: '#f7931a' }
+  ];
+
+  const STOCKS_LIST = [
+    { id: 'SBER', name: 'SBER', sub: 'Сбербанк · MOEX', color: '#238636' },
+    { id: 'GAZP', name: 'GAZP', sub: 'Газпром · MOEX', color: '#238636' },
+    { id: 'LKOH', name: 'LKOH', sub: 'Лукойл · MOEX', color: '#238636' },
+    { id: 'GMKN', name: 'GMKN', sub: 'Норникель · MOEX', color: '#238636' },
+    { id: 'ROSN', name: 'ROSN', sub: 'Роснефть · MOEX', color: '#238636' },
+    { id: 'NVTK', name: 'NVTK', sub: 'НОВАТЭК · MOEX', color: '#238636' },
+    { id: 'SNGS', name: 'SNGS', sub: 'Сургутнефтегаз · MOEX', color: '#238636' },
+    { id: 'TATN', name: 'TATN', sub: 'Татнефть · MOEX', color: '#238636' },
+    { id: 'MTSS', name: 'MTSS', sub: 'МТС · MOEX', color: '#238636' },
+    { id: 'MGNT', name: 'MGNT', sub: 'Магнит · MOEX', color: '#238636' },
+    { id: 'VTBR', name: 'VTBR', sub: 'ВТБ · MOEX', color: '#238636' },
+    { id: 'ALRS', name: 'ALRS', sub: 'АЛРОСА · MOEX', color: '#238636' },
+    { id: 'PLZL', name: 'PLZL', sub: 'Полюс · MOEX', color: '#238636' },
+    { id: 'CHMF', name: 'CHMF', sub: 'Северсталь · MOEX', color: '#238636' },
+    { id: 'NLMK', name: 'NLMK', sub: 'НЛМК · MOEX', color: '#238636' }
+  ];
+
+  const CURRENCIES_LIST = [
+    { id: 'USD', name: 'USD/RUB', sub: 'Доллар США · ЦБ РФ', color: '#58a6ff' },
+    { id: 'EUR', name: 'EUR/RUB', sub: 'Евро · ЦБ РФ', color: '#58a6ff' },
+    { id: 'CNY', name: 'CNY/RUB', sub: 'Юань · ЦБ РФ', color: '#58a6ff' }
+  ];
+
+  const ALL_INSTRUMENTS = [...CRYPTO_LIST, ...STOCKS_LIST, ...CURRENCIES_LIST];
+
+  // ======================= СОСТОЯНИЕ =======================
+  const state = {
+    activeTab: 'crypto',
+    favs: [],
+    priceCache: {},
+    prevCache: {},
+    firstName: '',
+    lastName: '',
+    currentInstrument: null,
+    chartInstance: null,
+    chartSeries: null,
+    chartReady: false,
+    activeTool: null,
+    drawings: [],
+    drawingHistory: [],
+    isDrawing: false,
+    drawStart: null,
+    drawPoints: [],
+    drawCtx: null,
+    chartCanvasRect: null,
+    lastChartData: null
+  };
+
+  // ======================= УТИЛИТЫ =======================
+  function fetchWithTimeout(url, ms = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    return fetch(url, { signal: controller.signal })
+      .finally(() => clearTimeout(timer));
+  }
+
+  function formatPrice(price, id) {
+    if (price == null || isNaN(price)) return '—';
+    if (CRYPTO_LIST.some(c => c.id === id)) {
+      if (price > 1000) return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 0 });
+      if (price > 1) return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return '$' + price.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+    }
+    if (STOCKS_LIST.some(s => s.id === id)) {
+      return price.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₽';
+    }
+    if (CURRENCIES_LIST.some(c => c.id === id)) {
+      return price.toLocaleString('ru-RU', { minimumFractionDigits: 4, maximumFractionDigits: 4 }) + ' ₽';
+    }
+    return price.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function getPrevPrice(id) {
+    return state.prevCache[id] != null ? state.prevCache[id] : null;
+  }
+
+  function priceClass(id) {
+    const cur = state.priceCache[id];
+    const prev = getPrevPrice(id);
+    if (cur == null || prev == null || cur === prev) return '';
+    return cur > prev ? 'up' : 'down';
+  }
+
+  function loadFavs() {
+    try { state.favs = JSON.parse(localStorage.getItem('axiom_favs') || '[]'); } catch(e) { state.favs = []; }
+  }
+  function saveFavs() {
+    localStorage.setItem('axiom_favs', JSON.stringify(state.favs));
+  }
+  function isFav(id) { return state.favs.includes(id); }
+
+  function toggleFav(id, event) {
+    if (event) { event.stopPropagation(); event.preventDefault(); }
+    const idx = state.favs.indexOf(id);
+    if (idx === -1) state.favs.push(id);
+    else state.favs.splice(idx, 1);
+    saveFavs();
+    renderAllLists();
+    if (state.currentInstrument && state.currentInstrument.id === id) {
+      updateChartStar();
+    }
+  }
+
+  // ======================= ЗАГРУЗКА ЦЕН =======================
+  async function fetchCryptoPrices() {
+    const symbols = CRYPTO_LIST.map(c => c.id);
+    const list = await fetchBybitPrices(symbols) || await fetchBinancePrices(symbols) || await fetchOkxPrices(symbols);
+    if (!list) return;
+    for (const [sym, price] of Object.entries(list)) {
+      if (price != null) {
+        state.prevCache[sym] = state.priceCache[sym] != null ? state.priceCache[sym] : price;
+        state.priceCache[sym] = price;
+      }
+    }
+  }
+
+  async function fetchBybitPrices(symbols) {
+    try {
+      const results = {};
+      const chunkSize = 8;
+      for (let i = 0; i < symbols.length; i += chunkSize) {
+        const chunk = symbols.slice(i, i + chunkSize);
+        const promises = chunk.map(async sym => {
+          try {
+            const res = await fetchWithTimeout(`https://api.bybit.com/v5/market/tickers?category=spot&symbol=${sym}`);
+            const json = await res.json();
+            if (json?.result?.list?.[0]) {
+              const t = json.result.list[0];
+              results[sym] = parseFloat(t.lastPrice);
+            }
+          } catch (e) {}
+        });
+        await Promise.allSettled(promises);
+        if (Object.keys(results).length >= symbols.length) break;
+      }
+      return Object.keys(results).length > 0 ? results : null;
+    } catch (e) { return null; }
+  }
+
+  async function fetchBinancePrices(symbols) {
+    try {
+      // data-api.binance.vision не блокируется из РФ и не требует ключа
+      const url = `https://data-api.binance.vision/api/v3/ticker/price?symbols=${encodeURIComponent(JSON.stringify(symbols))}`;
+      const res = await fetchWithTimeout(url);
+      const json = await res.json();
+      if (!Array.isArray(json)) return null;
+      const results = {};
+      json.forEach(item => { results[item.symbol] = parseFloat(item.price); });
+      return Object.keys(results).length > 0 ? results : null;
+    } catch (e) { return null; }
+  }
+
+  async function fetchOkxPrices(symbols) {
+    try {
+      const results = {};
+      const promises = symbols.map(async sym => {
+        const instId = sym.replace('USDT', '-USDT');
+        try {
+          const res = await fetchWithTimeout(`https://www.okx.com/api/v5/market/ticker?instId=${instId}`);
+          const json = await res.json();
+          if (json?.data?.[0]) results[sym] = parseFloat(json.data[0].last);
+        } catch (e) {}
+      });
+      await Promise.allSettled(promises);
+      return Object.keys(results).length > 0 ? results : null;
+    } catch (e) { return null; }
+  }
+
+  async function fetchStockPrices() {
+    try {
+      // MOEX ISS — официальный API, работает из РФ без VPN
+      for (const stock of STOCKS_LIST) {
+        try {
+          const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${stock.id}.json?iss.meta=off&iss.only=marketdata&marketdata.columns=SECID,LAST`;
+          const res = await fetchWithTimeout(url);
+          const json = await res.json();
+          const data = json?.marketdata?.data?.[0];
+          if (data && data[1] != null) {
+            const price = parseFloat(data[1]);
+            state.prevCache[stock.id] = state.priceCache[stock.id] != null ? state.priceCache[stock.id] : price;
+            state.priceCache[stock.id] = price;
+          }
+        } catch (e) {
+          // Игнорируем ошибки отдельных акций, продолжаем
+        }
+      }
+    } catch (e) {}
+  }
+
+  async function fetchCurrencyPrices() {
+    try {
+      // cbr-xml-daily.ru — JSON-зеркало ЦБ, работает без CORS
+      const res = await fetchWithTimeout('https://cbr-xml-daily.ru/daily_json.js');
+      const json = await res.json();
+      if (json?.Valute) {
+        for (const cur of CURRENCIES_LIST) {
+          const v = json.Valute[cur.id];
+          if (v) {
+            // Value в копейках, делиим на Nominal и на 100
+            const price = v.Value / (v.Nominal || 1) / 100;
+            state.prevCache[cur.id] = state.priceCache[cur.id] != null ? state.priceCache[cur.id] : price;
+            state.priceCache[cur.id] = price;
+          }
+        }
+      }
+    } catch (e) {
+      // Резерв: exchangerate.host
+      try {
+        const res = await fetchWithTimeout('https://api.exchangerate.host/latest?base=RUB&symbols=USD,EUR,CNY');
+        const json = await res.json();
+        if (json?.rates) {
+          for (const cur of CURRENCIES_LIST) {
+            const rate = json.rates[cur.id];
+            if (rate) {
+              const price = 1 / rate;
+              state.prevCache[cur.id] = state.priceCache[cur.id] != null ? state.priceCache[cur.id] : price;
+              state.priceCache[cur.id] = price;
+            }
+          }
+        }
+      } catch (e2) {}
+    }
+  }
+
+  // ======================= РЕНДЕР СПИСКОВ =======================
+  function renderList(containerId, list) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = list.map(item => {
+      const price = state.priceCache[item.id];
+      const cls = priceClass(item.id);
+      const favCls = isFav(item.id) ? 'active' : '';
+      return `
+        <div class="instrument-row" data-id="${item.id}">
+          <div class="left">
+            <div class="name">${item.name}</div>
+            <div class="sub">${item.sub}</div>
+          </div>
+          <div class="right">
+            <div class="price ${cls}" data-price-id="${item.id}">${formatPrice(price, item.id)}</div>
+            <button class="star-btn ${favCls}" data-star-id="${item.id}">★</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function renderFavorites() {
+    const container = document.getElementById('favContainer');
+    const favItems = ALL_INSTRUMENTS.filter(i => isFav(i.id));
+    if (favItems.length === 0) {
+      container.innerHTML = `
+        <div class="empty-fav">
+          <div class="icon">⭐</div>
+          <div class="text">Пока нет избранных</div>
+          <div class="hint">Нажми ★ рядом с инструментом</div>
+        </div>
+      `;
+    } else {
+      container.innerHTML = '<div class="instrument-list">' + favItems.map(item => {
+        const price = state.priceCache[item.id];
+        const cls = priceClass(item.id);
+        const favCls = isFav(item.id) ? 'active' : '';
+        return `
+          <div class="instrument-row" data-id="${item.id}">
+            <div class="left">
+              <div class="name">${item.name}</div>
+              <div class="sub">${item.sub}</div>
+            </div>
+            <div class="right">
+              <div class="price ${cls}" data-price-id="${item.id}">${formatPrice(price, item.id)}</div>
+              <button class="star-btn ${favCls}" data-star-id="${item.id}">★</button>
+            </div>
+          </div>
+        `;
+      }).join('') + '</div>';
+    }
+  }
+
+  function renderAllLists() {
+    renderList('listCrypto', CRYPTO_LIST);
+    renderList('listStocks', STOCKS_LIST);
+    renderList('listCurrencies', CURRENCIES_LIST);
+    renderFavorites();
+    // Обновляем цены без перерисовки, чтобы не сбить скролл
+    updatePricesInDOM();
+  }
+
+  function updatePricesInDOM() {
+    document.querySelectorAll('[data-price-id]').forEach(el => {
+      const id = el.dataset.priceId;
+      const item = ALL_INSTRUMENTS.find(i => i.id === id);
+      if (item) {
+        const price = state.priceCache[id];
+        el.textContent = formatPrice(price, id);
+        el.className = 'price ' + priceClass(id);
+      }
+    });
+  }
+
+  // ======================= СТАТУС =======================
+  function setStatus(text, isError) {
+    const el = document.getElementById('statusPill');
+    el.textContent = text;
+    el.className = 'status-pill' + (isError ? ' error' : ' live');
+  }
+
+  function setStatusLoading() {
+    const el = document.getElementById('statusPill');
+    el.textContent = 'Загрузка...';
+    el.className = 'status-pill';
+  }
+
+  // ======================= ГРАФИК =======================
+  async function openChart(instrument) {
+    state.currentInstrument = instrument;
+    const overlay = document.getElementById('chartOverlay');
+    overlay.classList.add('open');
+
+    document.getElementById('chartTitle').textContent = instrument.name;
+    document.getElementById('chartSub').textContent = instrument.sub;
+    updateChartStar();
+
+    const priceEl = document.getElementById('chartPrice');
+    const price = state.priceCache[instrument.id];
+    priceEl.textContent = formatPrice(price, instrument.id);
+    priceEl.className = 'header-price ' + priceClass(instrument.id);
+
+    document.getElementById('chartLoading').classList.remove('hidden');
+    document.getElementById('chartLoading').textContent = 'Загрузка графика...';
+
+    // Инициализация canvas для рисования
+    initDrawingCanvas();
+
+    // Загружаем данные свечей
+    try {
+      const candles = await fetchCandles(instrument);
+      if (!candles || candles.length === 0) {
+        document.getElementById('chartLoading').textContent = 'Нет данных';
+        return;
+      }
+      state.lastChartData = candles;
+      renderChart(candles, instrument);
+      document.getElementById('chartLoading').classList.add('hidden');
+      state.chartReady = true;
+    } catch (e) {
+      document.getElementById('chartLoading').textContent = 'Ошибка загрузки';
+      setStatus('Ошибка данных', true);
+    }
+  }
+
+  function closeChart() {
+    const overlay = document.getElementById('chartOverlay');
+    overlay.classList.remove('open');
+    document.getElementById('toolsPanel').classList.remove('open');
+    document.getElementById('fabDraw').classList.remove('open');
+    state.activeTool = null;
+    state.currentInstrument = null;
+    state.chartReady = false;
+    state.drawings = [];
+    state.drawingHistory = [];
+    if (state.chartInstance) {
+      state.chartInstance.remove();
+      state.chartInstance = null;
+      state.chartSeries = null;
+    }
+    const dc = document.getElementById('drawingCanvas');
+    dc.classList.remove('active');
+  }
+
+  function updateChartStar() {
+    if (!state.currentInstrument) return;
+    const star = document.getElementById('chartStar');
+    star.classList.toggle('active', isFav(state.currentInstrument.id));
+  }
+
+  async function fetchCandles(instrument) {
+    const isCrypto = CRYPTO_LIST.some(c => c.id === instrument.id);
+    const isStock = STOCKS_LIST.some(s => s.id === instrument.id);
+    const isCurrency = CURRENCIES_LIST.some(c => c.id === instrument.id);
+
+    if (isCrypto) {
+      // Bybit → Binance → OKX
+      let data = await fetchBybitKline(instrument.id);
+      if (!data) data = await fetchBinanceKline(instrument.id);
+      if (!data) data = await fetchOkxKline(instrument.id);
+      return data;
+    }
+
+    if (isStock) {
+      return await fetchStockCandles(instrument.id);
+    }
+
+    if (isCurrency) {
+      return await fetchCurrencyHistory(instrument.id);
+    }
+
+    return null;
+  }
+
+  async function fetchBybitKline(symbol) {
+    try {
+      const url = `https://api.bybit.com/v5/market/kline?category=spot&symbol=${symbol}&interval=1&limit=300`;
+      const res = await fetchWithTimeout(url);
+      const json = await res.json();
+      if (json?.result?.list?.length) {
+        // Bybit возвращает в обратном порядке, разворачиваем
+        return json.result.list.reverse().map(k => ({
+          time: Math.floor(parseInt(k[0]) / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4])
+        }));
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  async function fetchBinanceKline(symbol) {
+    try {
+      const url = `https://data-api.binance.vision/api/v3/klines?symbol=${symbol}&interval=1m&limit=300`;
+      const res = await fetchWithTimeout(url);
+      const json = await res.json();
+      if (Array.isArray(json) && json.length) {
+        return json.map(k => ({
+          time: Math.floor(k[0] / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4])
+        }));
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  async function fetchOkxKline(symbol) {
+    try {
+      const instId = symbol.replace('USDT', '-USDT');
+      const url = `https://www.okx.com/api/v5/market/candles?instId=${instId}&bar=1m&limit=300`;
+      const res = await fetchWithTimeout(url);
+      const json = await res.json();
+      if (json?.data?.length) {
+        return json.data.reverse().map(k => ({
+          time: Math.floor(parseInt(k[0]) / 1000),
+          open: parseFloat(k[1]),
+          high: parseFloat(k[2]),
+          low: parseFloat(k[3]),
+          close: parseFloat(k[4])
+        }));
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  async function fetchStockCandles(secid) {
+    try {
+      const url = `https://iss.moex.com/iss/engines/stock/markets/shares/boards/TQBR/securities/${secid}/candles.json?interval=24&limit=90&iss.meta=off`;
+      const res = await fetchWithTimeout(url);
+      const json = await res.json();
+      if (json?.candles?.data?.length) {
+        return json.candles.data.map(k => ({
+          time: Math.floor(new Date(k[6]).getTime() / 1000),
+          open: k[0],
+          high: k[2],
+          low: k[3],
+          close: k[1]
+        }));
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  async function fetchCurrencyHistory(currencyCode) {
+    try {
+      const results = [];
+      const today = new Date();
+      for (let i = 0; i < 30; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        try {
+          const url = `https://cbr-xml-daily.ru/archive/${y}/${m}/${day}/daily_json.js`;
+          const res = await fetchWithTimeout(url, 5000);
+          const json = await res.json();
+          if (json?.Valute?.[currencyCode]) {
+            const v = json.Valute[currencyCode];
+            const price = v.Value / (v.Nominal || 1) / 100;
+            results.push({
+              time: Math.floor(d.getTime() / 1000),
+              open: price,
+              high: price,
+              low: price,
+              close: price
+            });
+          }
+        } catch (e) {}
+      }
+      return results.length > 0 ? results.reverse() : null;
+    } catch (e) {}
+    return null;
+  }
+
+  function renderChart(candles, instrument) {
+    const container = document.getElementById('chartCanvas');
+    container.innerHTML = '';
+
+    if (state.chartInstance) {
+      state.chartInstance.remove();
+    }
+
+    const chart = LightweightCharts.createChart(container, {
+      width: container.clientWidth,
+      height: container.clientHeight,
+      layout: {
+        background: { color: '#0d1117' },
+        textColor: '#8b949e',
+      },
+      grid: {
+        vertLines: { color: '#21262d' },
+        horzLines: { color: '#21262d' },
+      },
+      crosshair: {
+        mode: LightweightCharts.CrosshairMode.Normal,
+      },
+      rightPriceScale: {
+        borderColor: '#21262d',
+        scaleMargins: { top: 0.1, bottom: 0.1 },
+      },
+      timeScale: {
+        borderColor: '#21262d',
+        timeVisible: true,
+        secondsVisible: false,
+      },
+      handleScroll: true,
+      handleScale: true,
+    });
+
+    const series = chart.addLineSeries({
+      color: instrument.color || '#58a6ff',
+      lineWidth: 2,
+      priceLineVisible: false,
+      lastValueVisible: true,
+      crosshairMarkerVisible: true,
+    });
+
+    series.setData(candles);
+    chart.timeScale().fitContent();
+
+    state.chartInstance = chart;
+    state.chartSeries = series;
+
+    // Подписываемся на скролл/зум для перерисовки рисунков
+    chart.timeScale().subscribeVisibleTimeRangeChange(() => {
+      redrawDrawings();
+    });
+
+    // Сохраняем прямоугольник canvas
+    setTimeout(() => {
+      state.chartCanvasRect = container.getBoundingClientRect();
+    }, 50);
+  }
+
+  // ======================= РИСОВАНИЕ =======================
+  function initDrawingCanvas() {
+    const canvas = document.getElementById('drawingCanvas');
+    const container = document.getElementById('chartContainer');
+    canvas.width = container.clientWidth * window.devicePixelRatio;
+    canvas.height = container.clientHeight * window.devicePixelRatio;
+    canvas.style.width = container.clientWidth + 'px';
+    canvas.style.height = container.clientHeight + 'px';
+    state.drawCtx = canvas.getContext('2d');
+    state.drawCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    state.drawings = [];
+    state.drawingHistory = [];
+    drawAll();
+  }
+
+  function getCanvasCoords(e) {
+    const canvas = document.getElementById('drawingCanvas');
+    const rect = canvas.getBoundingClientRect();
+    let clientX, clientY;
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function saveDrawingState() {
+    state.drawingHistory.push(JSON.stringify(state.drawings));
+    if (state.drawingHistory.length > 50) state.drawingHistory.shift();
+  }
+
+  function undoDrawing() {
+    if (state.drawingHistory.length === 0) return;
+    const prev = state.drawingHistory.pop();
+    state.drawings = JSON.parse(prev);
+    drawAll();
+  }
+
+  function clearDrawings() {
+    saveDrawingState();
+    state.drawings = [];
+    drawAll();
+  }
+
+  function drawAll() {
+    const ctx = state.drawCtx;
+    const canvas = document.getElementById('drawingCanvas');
+    if (!ctx || !canvas) return;
+    const dpr = window.devicePixelRatio;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
+
+    for (const d of state.drawings) {
+      drawShape(ctx, d);
+    }
+  }
+
+  function drawShape(ctx, d) {
+    ctx.strokeStyle = '#58a6ff';
+    ctx.fillStyle = 'rgba(88, 166, 255, 0.1)';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    switch (d.type) {
+      case 'hline':
+        ctx.beginPath();
+        ctx.moveTo(0, d.y);
+        ctx.lineTo(ctx.canvas.width / window.devicePixelRatio, d.y);
+        ctx.stroke();
+        break;
+
+      case 'vline':
+        ctx.beginPath();
+        ctx.moveTo(d.x, 0);
+        ctx.lineTo(d.x, ctx.canvas.height / window.devicePixelRatio);
+        ctx.stroke();
+        break;
+
+      case 'trend':
+        ctx.beginPath();
+        ctx.moveTo(d.x1, d.y1);
+        ctx.lineTo(d.x2, d.y2);
+        ctx.stroke();
+        break;
+
+      case 'pencil':
+        if (d.points && d.points.length > 1) {
+          ctx.beginPath();
+          ctx.moveTo(d.points[0].x, d.points[0].y);
+          for (let i = 1; i < d.points.length; i++) {
+            ctx.lineTo(d.points[i].x, d.points[i].y);
+          }
+          ctx.stroke();
+        }
+        break;
+
+      case 'rect':
+        ctx.fillRect(d.x1, d.y1, d.x2 - d.x1, d.y2 - d.y1);
+        ctx.strokeRect(d.x1, d.y1, d.x2 - d.x1, d.y2 - d.y1);
+        break;
+
+      case 'fib':
+        // Уровни Фибоначчи
+        const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
+        const minY = Math.min(d.y1, d.y2);
+        const maxY = Math.max(d.y1, d.y2);
+        const height = maxY - minY;
+        ctx.strokeStyle = '#ffca28';
+        ctx.lineWidth = 1;
+        ctx.font = '10px -apple-system, sans-serif';
+        ctx.fillStyle = '#ffca28';
+        for (const lvl of levels) {
+          const y = minY + height * lvl;
+          ctx.beginPath();
+          ctx.moveTo(d.x1, y);
+          ctx.lineTo(d.x2, y);
+          ctx.stroke();
+          ctx.fillText(lvl.toFixed(3), d.x2 + 4, y + 3);
+        }
+        break;
+    }
+  }
+
+  function redrawDrawings() {
+    drawAll();
+  }
+
+  // ======================= ИНСТРУМЕНТЫ РИСОВАНИЯ =======================
+  const TOOLS = [
+    { id: 'cursor', sym: '➤', label: 'Курсор' },
+    { id: 'hline', sym: '─', label: 'Линия' },
+    { id: 'vline', sym: '│', label: 'Верт.' },
+    { id: 'trend', sym: '╱', label: 'Тренд' },
+    { id: 'pencil', sym: '✏️', label: 'Карандаш' },
+    { id: 'rect', sym: '▭', label: 'Прямоуг.' },
+    { id: 'fib', sym: '≡', label: 'Фибо' },
+    { id: 'eraser', sym: '⌫', label: 'Ластик' },
+    { id: 'undo', sym: '↶', label: 'Отменить' },
+    { id: 'clear', sym: '🗑', label: 'Очистить' },
+  ];
+
+  function initToolsGrid() {
+    const grid = document.getElementById('toolsGrid');
+    grid.innerHTML = TOOLS.map(t => `
+      <button class="tool-btn" data-tool="${t.id}">
+        <span class="sym">${t.sym}</span>
+        <span>${t.label}</span>
+      </button>
+    `).join('');
+
+    grid.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tool-btn');
+      if (!btn) return;
+      const tool = btn.dataset.tool;
+
+      if (tool === 'undo') { undoDrawing(); return; }
+      if (tool === 'clear') { clearDrawings(); return; }
+
+      // Переключение инструмента
+      state.activeTool = state.activeTool === tool ? null : tool;
+
+      // Подсветка
+      grid.querySelectorAll('.tool-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.tool === state.activeTool);
+      });
+
+      // Активация canvas
+      const canvas = document.getElementById('drawingCanvas');
+      canvas.classList.toggle('active', state.activeTool && state.activeTool !== 'cursor' && state.activeTool !== 'eraser');
+    });
+  }
+
+  // ======================= ОБРАБОТЧИКИ РИСОВАНИЯ =======================
+  function setupDrawingEvents() {
+    const canvas = document.getElementById('drawingCanvas');
+
+    function onStart(e) {
+      if (!state.activeTool || state.activeTool === 'cursor' || state.activeTool === 'eraser' || state.activeTool === 'undo' || state.activeTool === 'clear') return;
+      e.preventDefault();
+      state.isDrawing = true;
+      const coords = getCanvasCoords(e);
+      state.drawStart = coords;
+      state.drawPoints = [coords];
+
+      if (state.activeTool === 'pencil') {
+        state.drawPoints = [coords];
+      }
+    }
+
+    function onMove(e) {
+      if (!state.isDrawing || !state.activeTool || state.activeTool === 'cursor' || state.activeTool === 'eraser') return;
+      e.preventDefault();
+      const coords = getCanvasCoords(e);
+
+      if (state.activeTool === 'pencil') {
+        state.drawPoints.push(coords);
+      }
+
+      // Предпросмотр
+      drawAll();
+      const ctx = state.drawCtx;
+      ctx.strokeStyle = '#58a6ff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+
+      if (state.activeTool === 'hline') {
+        ctx.beginPath();
+        ctx.moveTo(0, coords.y);
+        ctx.lineTo(ctx.canvas.width / window.devicePixelRatio, coords.y);
+        ctx.stroke();
+      } else if (state.activeTool === 'vline') {
+        ctx.beginPath();
+        ctx.moveTo(coords.x, 0);
+        ctx.lineTo(coords.x, ctx.canvas.height / window.devicePixelRatio);
+        ctx.stroke();
+      } else if (state.activeTool === 'trend' && state.drawStart) {
+        ctx.beginPath();
+        ctx.moveTo(state.drawStart.x, state.drawStart.y);
+        ctx.lineTo(coords.x, coords.y);
+        ctx.stroke();
+      } else if (state.activeTool === 'rect' && state.drawStart) {
+        ctx.strokeRect(state.drawStart.x, state.drawStart.y, coords.x - state.drawStart.x, coords.y - state.drawStart.y);
+      } else if (state.activeTool === 'pencil' && state.drawPoints.length > 1) {
+        ctx.beginPath();
+        ctx.moveTo(state.drawPoints[0].x, state.drawPoints[0].y);
+        for (let i = 1; i < state.drawPoints.length; i++) {
+          ctx.lineTo(state.drawPoints[i].x, state.drawPoints[i].y);
+        }
+        ctx.stroke();
+      }
+
+      ctx.setLineDash([]);
+    }
+
+    function onEnd(e) {
+      if (!state.isDrawing || !state.activeTool) return;
+      e.preventDefault();
+      const coords = getCanvasCoords(e);
+      saveDrawingState();
+
+      switch (state.activeTool) {
+        case 'hline':
+          state.drawings.push({ type: 'hline', y: coords.y });
+          break;
+        case 'vline':
+          state.drawings.push({ type: 'vline', x: coords.x });
+          break;
+        case 'trend':
+          if (state.drawStart) {
+            state.drawings.push({ type: 'trend', x1: state.drawStart.x, y1: state.drawStart.y, x2: coords.x, y2: coords.y });
+          }
+          break;
+        case 'rect':
+          if (state.drawStart) {
+            state.drawings.push({ type: 'rect', x1: state.drawStart.x, y1: state.drawStart.y, x2: coords.x, y2: coords.y });
+          }
+          break;
+        case 'pencil':
+          if (state.drawPoints.length > 1) {
+            state.drawings.push({ type: 'pencil', points: [...state.drawPoints] });
+          }
+          break;
+        case 'fib':
+          if (state.drawStart) {
+            state.drawings.push({ type: 'fib', x1: state.drawStart.x, y1: state.drawStart.y, x2: coords.x, y2: coords.y });
+          }
+          break;
+      }
+
+      state.isDrawing = false;
+      state.drawStart = null;
+      state.drawPoints = [];
+      drawAll();
+    }
+
+    // Мышь
+    canvas.addEventListener('mousedown', onStart);
+    canvas.addEventListener('mousemove', onMove);
+    canvas.addEventListener('mouseup', onEnd);
+    canvas.addEventListener('mouseleave', (e) => { if (state.isDrawing) onEnd(e); });
+
+    // Тач
+    canvas.addEventListener('touchstart', onStart, { passive: false });
+    canvas.addEventListener('touchmove', onMove, { passive: false });
+    canvas.addEventListener('touchend', onEnd, { passive: false });
+    canvas.addEventListener('touchcancel', onEnd, { passive: false });
+  }
+
+  // ======================= ПРОФИЛЬ =======================
+  function loadProfile() {
+    state.firstName = localStorage.getItem('axiom_firstname') || '';
+    state.lastName = localStorage.getItem('axiom_lastname') || '';
+    document.getElementById('inputFirstName').value = state.firstName;
+    document.getElementById('inputLastName').value = state.lastName;
+    updateAvatar();
+  }
+
+  function updateAvatar() {
+    const letter = (state.firstName || 'A').charAt(0).toUpperCase();
+    document.getElementById('avatarLetter').textContent = letter;
+  }
+
+  function saveProfile() {
+    state.firstName = document.getElementById('inputFirstName').value.trim();
+    state.lastName = document.getElementById('inputLastName').value.trim();
+    localStorage.setItem('axiom_firstname', state.firstName);
+    localStorage.setItem('axiom_lastname', state.lastName);
+    updateAvatar();
+
+    const btn = document.getElementById('saveBtn');
+    btn.textContent = '✓ Сохранено';
+    btn.classList.add('saved');
+    setTimeout(() => {
+      btn.textContent = 'Сохранить';
+      btn.classList.remove('saved');
+    }, 1500);
+
+    updateStats();
+  }
+
+  function updateStats() {
+    document.getElementById('statFavs').textContent = state.favs.length;
+    document.getElementById('statTotal').textContent = ALL_INSTRUMENTS.length;
+  }
+
+  // ======================= ТАБЫ =======================
+  function switchTab(tab) {
+    state.activeTab = tab;
+    document.querySelectorAll('.tab-item').forEach(t => {
+      t.classList.toggle('active', t.dataset.tab === tab);
+    });
+    document.querySelectorAll('.tab-page').forEach(p => {
+      p.classList.toggle('active', p.id === 'page' + tab.charAt(0).toUpperCase() + tab.slice(1));
+    });
+    if (tab === 'profile') {
+      updateStats();
+      loadProfile();
+    }
+    if (tab === 'favorites') {
+      renderFavorites();
+    }
+  }
+
+  // ======================= TELEGRAM =======================
+  function initTelegram() {
+    if (window.Telegram?.WebApp) {
+      try {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+        const user = window.Telegram.WebApp.initDataUnsafe?.user;
+        if (user) {
+          if (!localStorage.getItem('axiom_firstname') && user.first_name) {
+            localStorage.setItem('axiom_firstname', user.first_name);
+            state.firstName = user.first_name;
+          }
+          if (!localStorage.getItem('axiom_lastname') && user.last_name) {
+            localStorage.setItem('axiom_lastname', user.last_name);
+            state.lastName = user.last_name;
+          }
+          loadProfile();
+        }
+      } catch (e) {}
+    }
+  }
+
+  // ======================= АВТООБНОВЛЕНИЕ =======================
+  async function refreshAll() {
+    try {
+      setStatus('🟢 Live');
+      await Promise.allSettled([
+        fetchCryptoPrices(),
+        fetchStockPrices(),
+        fetchCurrencyPrices()
+      ]);
+      updatePricesInDOM();
+      renderFavorites();
+      updateStats();
+      if (state.currentInstrument) {
+        const price = state.priceCache[state.currentInstrument.id];
+        const el = document.getElementById('chartPrice');
+        if (el) {
+          el.textContent = formatPrice(price, state.currentInstrument.id);
+          el.className = 'header-price ' + priceClass(state.currentInstrument.id);
+        }
+      }
+    } catch (e) {
+      setStatus('Ошибка', true);
+    }
+  }
+
+  // ======================= ИНИЦИАЛИЗАЦИЯ =======================
+  function init() {
+    loadFavs();
+    loadProfile();
+    initTelegram();
+    initToolsGrid();
+    setupDrawingEvents();
+
+    // Первичная загрузка
+    setStatusLoading();
+    refreshAll();
+
+    // Автообновление: крипта 15с, акции 30с, валюты 60с
+    setInterval(() => { fetchCryptoPrices().then(updatePricesInDOM); }, 15000);
+    setInterval(() => { fetchStockPrices().then(updatePricesInDOM); }, 30000);
+    setInterval(() => { fetchCurrencyPrices().then(updatePricesInDOM); }, 60000);
+
+    // Рендер списков
+    renderAllLists();
+
+    // Табы
+    document.querySelectorAll('.tab-item').forEach(t => {
+      t.addEventListener('click', () => switchTab(t.dataset.tab));
+    });
+
+    // Клики по инструментам (делегирование)
+    document.body.addEventListener('click', (e) => {
+      // Звезда
+      const star = e.target.closest('[data-star-id]');
+      if (star) {
+        toggleFav(star.dataset.starId, e);
+        return;
+      }
+      // Строка инструмента
+      const row = e.target.closest('.instrument-row');
+      if (row && row.dataset.id) {
+        const inst = ALL_INSTRUMENTS.find(i => i.id === row.dataset.id);
+        if (inst) openChart(inst);
+      }
+    });
+
+    // Назад с графика
+    document.getElementById('chartBack').addEventListener('click', closeChart);
+
+    // Звезда в графике
+    document.getElementById('chartStar').addEventListener('click', (e) => {
+      if (state.currentInstrument) toggleFav(state.currentInstrument.id, e);
+    });
+
+    // FAB рисования
+    document.getElementById('fabDraw').addEventListener('click', () => {
+      const panel = document.getElementById('toolsPanel');
+      const fab = document.getElementById('fabDraw');
+      const isOpen = panel.classList.contains('open');
+      panel.classList.toggle('open', !isOpen);
+      fab.classList.toggle('open', !isOpen);
+      if (!isOpen) {
+        fab.textContent = '✕';
+      } else {
+        fab.textContent = '✏️';
+      }
+    });
+
+    // Закрытие панели инструментов
+    document.getElementById('toolsClose').addEventListener('click', () => {
+      document.getElementById('toolsPanel').classList.remove('open');
+      document.getElementById('fabDraw').classList.remove('open');
+      document.getElementById('fabDraw').textContent = '✏️';
+    });
+
+    // Клик вне панели
+    document.getElementById('chartContainer').addEventListener('click', (e) => {
+      const panel = document.getElementById('toolsPanel');
+      if (panel.classList.contains('open') && !e.target.closest('.tools-panel') && !e.target.closest('.fab-draw')) {
+        panel.classList.remove('open');
+        document.getElementById('fabDraw').classList.remove('open');
+        document.getElementById('fabDraw').textContent = '✏️';
+      }
+    });
+
+    // Сохранение профиля
+    document.getElementById('saveBtn').addEventListener('click', saveProfile);
+
+    // Баннер Axiom
+    document.getElementById('axiomBanner').addEventListener('click', () => {
+      alert('Скоро запуск! Следите за обновлениями.');
+    });
+
+    // Ресайз окна
+    window.addEventListener('resize', () => {
+      if (state.chartInstance) {
+        const container = document.getElementById('chartCanvas');
+        state.chartInstance.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight,
+        });
+        initDrawingCanvas();
+      }
+    });
+  }
+
+  // Запуск
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+</body>
+  </html>
